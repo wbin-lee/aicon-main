@@ -270,23 +270,25 @@ const getCategoryIcon = (category: string) => {
 };
 
 export function BoothSection() {
-  const [hoveredBooth, setHoveredBooth] = useState<BoothInfo | null>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [selectedBooth, setSelectedBooth] = useState<BoothInfo | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showBoothModal, setShowBoothModal] = useState(false);
 
-  const handleBoothHover = (booth: BoothInfo, event: React.MouseEvent) => {
-    setHoveredBooth(booth);
-    setMousePosition({ x: event.clientX, y: event.clientY });
+  const handleBoothClick = (booth: BoothInfo) => {
+    setSelectedBooth(booth);
+    setShowBoothModal(true);
   };
 
-  const handleBoothLeave = () => {
-    setHoveredBooth(null);
-  };
-
-  const handleMouseMove = (event: React.MouseEvent) => {
-    if (hoveredBooth) {
-      setMousePosition({ x: event.clientX, y: event.clientY });
-    }
+  const getCategoryDisplayName = (category: string) => {
+    const categoryNames = {
+      research: '포스터세션',
+      department: '과제부스',
+      tech: 'AI이벤트부스',
+      partner: '파트너부스',
+      photo: '포토부스',
+      demo: '이벤트부스'
+    };
+    return categoryNames[category as keyof typeof categoryNames] || category;
   };
 
   return (
@@ -308,7 +310,6 @@ export function BoothSection() {
           <Card className="overflow-hidden shadow-2xl">
             <div 
               className="relative bg-pink-100 h-[600px] overflow-hidden border-4 border-gray-400"
-              onMouseMove={handleMouseMove}
             >
                 {/* Floor Plan Background - Recreation of the uploaded image */}
                 <div className="absolute inset-0">
@@ -462,7 +463,7 @@ export function BoothSection() {
 
                 </div>
 
-                {/* Interactive Booth Overlays */}
+                {/* Clickable Booth Areas */}
                 <div className="absolute inset-0">
                   {boothsData.map(booth => (
                     <div
@@ -474,41 +475,10 @@ export function BoothSection() {
                         width: booth.position.width,
                         height: booth.position.height
                       }}
-                      onMouseEnter={(e) => handleBoothHover(booth, e)}
-                      onMouseLeave={handleBoothLeave}
+                      onClick={() => handleBoothClick(booth)}
                     />
                   ))}
                 </div>
-
-                {/* Tooltip */}
-                {hoveredBooth && (
-                  <div
-                    className="fixed z-50 pointer-events-none"
-                    style={{
-                      left: mousePosition.x + 15,
-                      top: mousePosition.y - 10,
-                      transform: 'translateY(-100%)'
-                    }}
-                  >
-                    <Card className="bg-white shadow-xl border-2 border-[#5325BA] max-w-xs">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`w-6 h-6 rounded-full ${getCategoryColor(hoveredBooth.category)} flex items-center justify-center`}>
-                            {React.createElement(getCategoryIcon(hoveredBooth.category), { className: "w-3 h-3" })}
-                          </div>
-                          <h3 className="font-bold text-lg text-gray-900">{hoveredBooth.name}</h3>
-                        </div>
-                        <div className="mb-2">
-                          <span className="text-sm font-medium text-[#5325BA]">부서: </span>
-                          <span className="text-sm text-gray-700">{hoveredBooth.department}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">
-                          {hoveredBooth.description}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
             </div>
           </Card>
 
@@ -568,60 +538,26 @@ export function BoothSection() {
           </div>
 
           {/* Booth List */}
-          <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {boothsData
               .filter(booth => selectedCategory === null || booth.category === selectedCategory)
               .map(booth => {
                 const IconComponent = getCategoryIcon(booth.category);
                 return (
-                  <Card key={booth.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-[#5325BA] bg-white relative">
-                    {/* Service Links Icon - Only show for department booths with links */}
-                    {booth.category === 'department' && booth.serviceLinks && booth.serviceLinks.length > 0 && (
-                      <div className="absolute top-3 right-3">
-                        <div className="relative group">
-                          <div className="w-8 h-8 bg-[#5325BA] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#5325BA]/90 transition-colors">
-                            <ExternalLink className="w-4 h-4 text-white" />
-                          </div>
-                          
-                          {/* Service Links Dropdown */}
-                          <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                            <div className="p-3">
-                              <h4 className="font-semibold text-sm text-gray-800 mb-2">서비스 링크</h4>
-                              <div className="space-y-2">
-                                {booth.serviceLinks.map((link, index) => (
-                                  <a
-                                    key={index}
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block p-2 text-sm text-gray-700 hover:bg-gray-50 rounded transition-colors"
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <ExternalLink className="w-3 h-3 text-[#5325BA]" />
-                                      <span>{link.name}</span>
-                                    </div>
-                                  </a>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
+                  <Card key={booth.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-[#5325BA] bg-white relative cursor-pointer" onClick={() => handleBoothClick(booth)}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className={`w-8 h-8 rounded-full ${getCategoryColor(booth.category)} flex items-center justify-center`}>
+                          <IconComponent className="w-4 h-4" />
+                        </div>
+                        <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors">
+                          <Info className="w-3 h-3 text-gray-600" />
                         </div>
                       </div>
-                    )}
-                    
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-10 h-10 rounded-full ${getCategoryColor(booth.category)} flex items-center justify-center`}>
-                          <IconComponent className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-lg">{booth.name}</h3>
-                          <p className="text-sm text-[#5325BA] font-medium">{booth.department}</p>
-                        </div>
+                      <div>
+                        <h3 className="font-bold text-base mb-1">{booth.name}</h3>
+                        <p className="text-sm text-[#5325BA] font-medium">{booth.department}</p>
                       </div>
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {booth.description}
-                      </p>
                     </CardContent>
                   </Card>
                 );
@@ -632,6 +568,68 @@ export function BoothSection() {
           {selectedCategory && boothsData.filter(booth => booth.category === selectedCategory).length === 0 && (
             <div className="mt-12 text-center py-12">
               <p className="text-gray-500 text-lg">선택한 카테고리에 해당하는 부스가 없습니다.</p>
+            </div>
+          )}
+
+          {/* Booth Details Modal */}
+          {selectedBooth && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedBooth(null)}>
+              <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-full ${getCategoryColor(selectedBooth.category)} flex items-center justify-center`}>
+                        {React.createElement(getCategoryIcon(selectedBooth.category), { className: "w-6 h-6" })}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900">{selectedBooth.name}</h2>
+                        <p className="text-lg text-[#5325BA] font-medium">{selectedBooth.department}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSelectedBooth(null)}
+                      className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors"
+                    >
+                      <span className="text-gray-600 text-xl">×</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Category */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">카테고리</h3>
+                      <p className="text-lg text-gray-900">{getCategoryDisplayName(selectedBooth.category)}</p>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">상세 설명</h3>
+                      <p className="text-gray-700 leading-relaxed">{selectedBooth.description}</p>
+                    </div>
+
+                    {/* Service Links - Only for department booths */}
+                    {selectedBooth.category === 'department' && selectedBooth.serviceLinks && selectedBooth.serviceLinks.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">서비스 링크</h3>
+                        <div className="space-y-2">
+                          {selectedBooth.serviceLinks.map((link, index) => (
+                            <a
+                              key={index}
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4 text-[#5325BA]" />
+                              <span className="text-gray-700 font-medium">{link.name}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

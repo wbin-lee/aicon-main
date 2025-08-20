@@ -163,7 +163,7 @@ export function SessionDetailPage({ session, onClose }: SessionDetailPageProps) 
     // Handle escape key to close
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     };
 
@@ -171,16 +171,30 @@ export function SessionDetailPage({ session, onClose }: SessionDetailPageProps) 
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
+  // Scroll to schedule section when closing
+  const handleClose = () => {
+    onClose();
+    // Scroll to schedule section after a short delay to ensure the modal is closed
+    setTimeout(() => {
+      const scheduleSection = document.getElementById('schedule');
+      if (scheduleSection) {
+        scheduleSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   // Browser back button integration
   useEffect(() => {
     // Push a new state when the session detail page opens
-    window.history.pushState({ sessionDetail: true }, '', window.location.href);
+    const currentUrl = window.location.href;
+    const sessionDetailUrl = `${currentUrl}#session-detail`;
+    window.history.pushState({ sessionDetail: true }, '', sessionDetailUrl);
 
     // Listen for browser back button
     const handlePopState = (event: PopStateEvent) => {
       // If we're going back from the session detail page, close it
       if (!event.state || !event.state.sessionDetail) {
-        onClose();
+        handleClose();
       }
     };
 
@@ -189,6 +203,10 @@ export function SessionDetailPage({ session, onClose }: SessionDetailPageProps) 
     // Cleanup
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      // Restore the original URL when component unmounts
+      if (window.location.hash === '#session-detail') {
+        window.history.replaceState(null, '', currentUrl);
+      }
     };
   }, [onClose]);
 
@@ -202,7 +220,7 @@ export function SessionDetailPage({ session, onClose }: SessionDetailPageProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onClose}
+                onClick={handleClose}
                 className="text-gray-600 hover:text-gray-900"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -216,7 +234,7 @@ export function SessionDetailPage({ session, onClose }: SessionDetailPageProps) 
             <Button
               variant="ghost"
               size="sm"
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-600 hover:text-gray-900"
             >
               <X className="w-5 h-5" />
